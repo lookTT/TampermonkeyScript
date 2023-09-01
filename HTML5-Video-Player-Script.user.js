@@ -43,8 +43,11 @@
 
     // Handle keydown event
     function handleKeyDown(event) {
+        // console.log(document.activeElement.id)
         // Check if the active element is an input element
-        if (document.activeElement.id.toLowerCase() === 'contenteditable-root') {
+        if (document.activeElement.id.toLowerCase() === 'contenteditable-root' 
+            || document.activeElement.tagName.toLowerCase() === 'input'
+            || document.activeElement.tagName.toLowerCase() === 'textarea') {
             return; // If typing in an input element, don't handle keydown for playback control
         }
 
