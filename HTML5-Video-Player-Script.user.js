@@ -27,13 +27,10 @@
     document.body.appendChild(speedDisplay);
 
     // Wait for video player to load
-    const waitForPlayer = setInterval(() => {
+    const init = setInterval(() => {
         const player = document.querySelector('video');
         if (player) {
-            clearInterval(waitForPlayer);
-            player.playbackRate = playbackRate;
-            updateSpeedDisplay(playbackRate);
-
+            clearInterval(init);
             // Add event listener for keydown event
             document.addEventListener('keydown', handleKeyDown);
             // Add event listener for ratechange event
@@ -41,11 +38,19 @@
         }
     }, 1000);
 
+    // Executed once per second
+    const hartbeat = setInterval(() => {
+        const player = document.querySelector('video');
+        if (player) {
+            player.playbackRate = playbackRate;
+        }
+    }, 1000);
+
     // Handle keydown event
     function handleKeyDown(event) {
         // console.log(document.activeElement.id)
         // Check if the active element is an input element
-        if (document.activeElement.id.toLowerCase() === 'contenteditable-root' 
+        if (document.activeElement.id.toLowerCase() === 'contenteditable-root'
             || document.activeElement.tagName.toLowerCase() === 'input'
             || document.activeElement.tagName.toLowerCase() === 'textarea') {
             return; // If typing in an input element, don't handle keydown for playback control
@@ -89,8 +94,8 @@
     // Handle ratechange event
     function handleRateChange(event) {
         const player = event.target;
-        playbackRate = player.playbackRate;
-        updateSpeedDisplay(playbackRate);
+        //playbackRate = player.playbackRate;
+        updateSpeedDisplay(player.playbackRate);
     }
 
     // Update speed display
