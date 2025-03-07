@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HTML5 Video Player Script
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Set default video playback speed to 2x on YouTube and bilibili, display speed in player, fix bugs
 // @author       zltdhr
 // @match        https://*.youtube.com/watch*
@@ -15,104 +15,64 @@
 
     let playbackRate = 2;
     const speedDisplay = document.createElement('div');
-    speedDisplay.style.position = 'absolute';
-    speedDisplay.style.zIndex = '9999';
-    speedDisplay.style.top = '10px';
-    speedDisplay.style.left = '10px';
-    speedDisplay.style.background = 'black';
+    speedDisplay.id = 'custom-speed-display';
+    speedDisplay.style.position = 'fixed';
+    speedDisplay.style.zIndex = '10000';
+    speedDisplay.style.top = '20px';
+    speedDisplay.style.left = '20px';
+    speedDisplay.style.background = 'rgba(0, 0, 0, 0.7)';
     speedDisplay.style.color = 'white';
-    speedDisplay.style.fontSize = '14px';
-    speedDisplay.style.padding = '5px';
-    speedDisplay.style.display = 'none';
+    speedDisplay.style.fontSize = '16px';
+    speedDisplay.style.padding = '8px 12px';
+    speedDisplay.style.borderRadius = '5px';
+    speedDisplay.style.display = 'block';
+    speedDisplay.style.pointerEvents = 'none'; // 防止影响用户点击
     document.body.appendChild(speedDisplay);
 
-    // Wait for video player to load
+    function updateSpeedDisplay() {
+        speedDisplay.textContent = `Speed: ${playbackRate.toFixed(1)}x`;
+    }
+
+    // 等待视频加载
     const init = setInterval(() => {
         const player = document.querySelector('video');
         if (player) {
             clearInterval(init);
-            // Add event listener for keydown event
+            player.playbackRate = playbackRate;
+            updateSpeedDisplay();
+
+            // 监听按键事件
             document.addEventListener('keydown', handleKeyDown);
-            // Add event listener for ratechange event
-            player.addEventListener('ratechange', handleRateChange);
+
+            // 监听播放速率变化事件
+            player.addEventListener('ratechange', () => {
+                playbackRate = player.playbackRate;
+                updateSpeedDisplay();
+            });
         }
     }, 1000);
 
-    // Executed once per second
-    const hartbeat = setInterval(() => {
-        const player = document.querySelector('video');
-        if (player) {
-            player.playbackRate = playbackRate;
-        }
-    }, 1000);
-
-    // Handle keydown event
     function handleKeyDown(event) {
-        // console.log(document.activeElement.id)
-        // Check if the active element is an input element
-        if (document.activeElement.id.toLowerCase() === 'contenteditable-root'
-            || document.activeElement.tagName.toLowerCase() === 'input'
-            || document.activeElement.tagName.toLowerCase() === 'textarea') {
-            return; // If typing in an input element, don't handle keydown for playback control
+        if (document.activeElement.tagName.toLowerCase() === 'input' ||
+            document.activeElement.tagName.toLowerCase() === 'textarea' ||
+            document.activeElement.isContentEditable) {
+            return;
         }
 
         const player = document.querySelector('video');
-        if (event.code.toLowerCase() === 'minus' || event.code.toLowerCase() === 'keyz') {
-            playbackRate -= 0.5;
-            if (playbackRate < 0.5) {
-                playbackRate = 0.5;
-            }
+        if (!player) return;
+
+        if (event.code.toLowerCase() === 'keyz') {
+            playbackRate = Math.max(0.5, playbackRate - 0.5);
             player.playbackRate = playbackRate;
-            updateSpeedDisplay(playbackRate);
-        }
-        else if (event.code.toLowerCase() === 'equal' || event.code.toLowerCase() === 'keyx') {
-            playbackRate += 0.5;
-            if (playbackRate > 16) {
-                playbackRate = 16;
-            }
+        } else if (event.code.toLowerCase() === 'keyx') {
+            playbackRate = Math.min(16, playbackRate + 0.5);
             player.playbackRate = playbackRate;
-            updateSpeedDisplay(playbackRate);
-        }
-        else if (event.code.toLowerCase() === 'keya') {
+        } else if (event.code.toLowerCase() === 'keya' || (event.shiftKey && event.code.toLowerCase() === 'arrowleft')) {
             player.currentTime -= 30;
-            updateForwardAndRewindDisplay(-30)
-        }
-        else if (event.code.toLowerCase() === 'keys') {
+        } else if (event.code.toLowerCase() === 'keys' || (event.shiftKey && event.code.toLowerCase() === 'arrowright')) {
             player.currentTime += 30;
-            updateForwardAndRewindDisplay(30)
         }
-        else if (event.shiftKey && event.code.toLowerCase() === 'arrowleft') {
-            player.currentTime -= 30;
-            updateForwardAndRewindDisplay(-30)
-        }
-        else if (event.shiftKey && event.code.toLowerCase() === 'arrowright') {
-            player.currentTime += 30;
-            updateForwardAndRewindDisplay(30)
-        }
-    }
-
-    // Handle ratechange event
-    function handleRateChange(event) {
-        const player = event.target;
-        //playbackRate = player.playbackRate;
-        updateSpeedDisplay(player.playbackRate);
-    }
-
-    // Update speed display
-    function updateSpeedDisplay(playbackRate) {
-        speedDisplay.innerHTML = `Speed: ${playbackRate.toFixed(1)}x`;
-        speedDisplay.style.display = 'block';
-        setTimeout(() => {
-            speedDisplay.style.display = 'none';
-        }, 3000);
-    }
-
-    // Update speed display
-    function updateForwardAndRewindDisplay(num) {
-        speedDisplay.innerHTML = `forward & rewind: ${num.toFixed(1)}x`;
-        speedDisplay.style.display = 'block';
-        setTimeout(() => {
-            speedDisplay.style.display = 'none';
-        }, 3000);
+        updateSpeedDisplay();
     }
 })();
