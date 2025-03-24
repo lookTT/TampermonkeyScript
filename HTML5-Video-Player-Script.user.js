@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         HTML5 Video Player Script
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Set default video playback speed to 2x on YouTube and bilibili, display speed in player, fix bugs
+// @version      0.3
+// @description  Set default video playback speed to 2x on YouTube and Bilibili, display speed in player, fix bugs
 // @author       zltdhr
 // @match        https://*.youtube.com/watch*
 // @match        https://*.bilibili.com/*
@@ -25,15 +25,28 @@
     speedDisplay.style.fontSize = '16px';
     speedDisplay.style.padding = '8px 12px';
     speedDisplay.style.borderRadius = '5px';
-    speedDisplay.style.display = 'block';
-    speedDisplay.style.pointerEvents = 'none'; // 防止影响用户点击
+    speedDisplay.style.display = 'none'; // Initially hidden
+    speedDisplay.style.pointerEvents = 'none'; // Prevent interfering with user interaction
     document.body.appendChild(speedDisplay);
+
+    let hideTimeout;
 
     function updateSpeedDisplay() {
         speedDisplay.textContent = `Speed: ${playbackRate.toFixed(1)}x`;
+        speedDisplay.style.display = 'block'; // Show the speed display
+
+        // Clear existing timeout if present
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+        }
+
+        // Auto-hide after 2 seconds
+        hideTimeout = setTimeout(() => {
+            speedDisplay.style.display = 'none';
+        }, 2000);
     }
 
-    // 等待视频加载
+    // Wait for the video element to be available
     const init = setInterval(() => {
         const player = document.querySelector('video');
         if (player) {
@@ -41,10 +54,10 @@
             player.playbackRate = playbackRate;
             updateSpeedDisplay();
 
-            // 监听按键事件
+            // Listen for keyboard events
             document.addEventListener('keydown', handleKeyDown);
 
-            // 监听播放速率变化事件
+            // Listen for playback speed changes
             player.addEventListener('ratechange', () => {
                 playbackRate = player.playbackRate;
                 updateSpeedDisplay();
@@ -53,9 +66,11 @@
     }, 1000);
 
     function handleKeyDown(event) {
-        if (document.activeElement.tagName.toLowerCase() === 'input' ||
+        if (
+            document.activeElement.tagName.toLowerCase() === 'input' ||
             document.activeElement.tagName.toLowerCase() === 'textarea' ||
-            document.activeElement.isContentEditable) {
+            document.activeElement.isContentEditable
+        ) {
             return;
         }
 
